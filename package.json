@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "test": "jest --watchAll",
     "lint": "expo lint",
-    "prebuild": "expo prebuild --platform ios"
+    "prebuild": "expo prebuild --platform ios",
+    "production": "expo run:ios --configuration Release"
   },
   "jest": {
     "preset": "jest-expo"
