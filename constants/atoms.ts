@@ -19,3 +19,8 @@ export const numberOfRemindersCompletedAtom = createAtomWithStorage<number>(
 export const settingsAtom = createAtomWithStorage<Settings>("settings", {
   openaiApiKey: "",
 });
+
+export const transcriptionAtom = createAtomWithStorage<string>(
+  "transcription",
+  ""
+);

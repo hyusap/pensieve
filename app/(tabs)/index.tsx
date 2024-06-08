@@ -1,9 +1,17 @@
-import { Button, Text, View, Image, Alert } from "react-native";
+import {
+  Button,
+  Text,
+  View,
+  Image,
+  Alert,
+  Pressable,
+  StyleSheet,
+} from "react-native";
 import { Audio } from "expo-av";
 import { useState } from "react";
 import OpenAI from "openai";
 import "react-native-get-random-values";
-import { v4 as uuidv4 } from "uuid";
+
 import { Reminder } from "@/constants/types";
 import ReminderView from "@/components/ReminderView";
 
@@ -12,14 +20,19 @@ import {
   numberOfRemindersCreatedAtom,
   remindersAtom,
   settingsAtom,
+  transcriptionAtom,
 } from "@/constants/atoms";
+import { FontAwesome5 } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 export default function Index() {
   const [permissionResponse, requestPermission] = Audio.usePermissions();
   const [recording, setRecording] = useState<Audio.Recording>();
-  const [transcription, setTranscription] = useState<string>("default");
-  const [finalReminder, setFinalReminder] = useState<Reminder>();
+
   const settings = useAtomValue(settingsAtom);
+  const [transcription, setTranscription] = useAtom(transcriptionAtom);
+
+  const router = useRouter();
 
   async function startRecording() {
     if (settings.openaiApiKey === "") {
@@ -51,6 +64,7 @@ export default function Index() {
         allowsRecordingIOS: false,
       });
       const uri = recording.getURI();
+      setRecording(undefined);
       if (uri) {
         console.log("Recording saved to", uri);
 
@@ -77,67 +91,7 @@ export default function Index() {
         const trans = await response.json();
         console.log(trans);
         setTranscription(trans.text);
-      }
-
-      setRecording(undefined);
-    }
-  }
-
-  async function AIify() {
-    if (settings.openaiApiKey === "") {
-      Alert.alert("Error", "OpenAI API Key is not set");
-      return;
-    }
-    const openai = new OpenAI({
-      apiKey: settings.openaiApiKey,
-    });
-
-    if (transcription) {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are ReminderBot. You will be provided with a transcription of what the user wants to remember. You should create a clear reminder with good english.",
-          },
-          { role: "user", content: transcription },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "create_reminder",
-              description: "Create a reminder based on the user's input",
-              parameters: {
-                type: "object",
-                properties: {
-                  title: {
-                    type: "string",
-                    description: "The title of the reminder",
-                  },
-                  dueDate: {
-                    type: "string",
-                    description: "When the reminder should be due",
-                  },
-                  description: {
-                    type: "string",
-                    description: "The description of the reminder",
-                  },
-                },
-              },
-            },
-          },
-        ],
-      });
-
-      const toolCall =
-        response.choices[0].message.tool_calls?.[0].function.arguments;
-      if (toolCall) {
-        const reminder = JSON.parse(toolCall);
-        setFinalReminder({ ...reminder, uuid: uuidv4() });
-      } else {
-        alert("Error creating reminder");
+        router.push("/createModal");
       }
     }
   }
@@ -147,13 +101,6 @@ export default function Index() {
     numberOfRemindersCreatedAtom
   );
 
-  async function saveReminder() {
-    if (finalReminder) {
-      setReminders([...reminders, finalReminder]);
-      setNumberOfRemindersCreated(numberOfRemindersCreated + 1);
-    }
-  }
-
   return (
     <View
       style={{
@@ -162,12 +109,32 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Button title="Start Recording" onPress={startRecording} />
+      {/* <Button title="Start Recording" onPress={startRecording} />
       <Button title="Stop Recording" onPress={stopRecording} />
       <Text>{transcription}</Text>
       <Button title="AIify" onPress={AIify} />
       {finalReminder && <ReminderView reminder={finalReminder} />}
-      <Button title="Save Reminder" onPress={saveReminder} />
+      <Button title="Save Reminder" onPress={saveReminder} /> */}
+      {recording ? (
+        <Pressable style={styles.button} onPress={stopRecording}>
+          <FontAwesome5 name="pause" size={200} color="white" />
+        </Pressable>
+      ) : (
+        <Pressable style={styles.button} onPress={startRecording}>
+          <FontAwesome5 name="microphone" size={200} color="white" />
+        </Pressable>
+      )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  button: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#007AFF",
+    borderRadius: 9999,
+    padding: 50,
+    aspectRatio: 1,
+  },
+});

@@ -21,7 +21,7 @@ export default function SharePage() {
       style={{
         flex: 1,
         justifyContent: "center",
-        alignItems: "center",
+        // alignItems: "center",
         padding: 20,
       }}
     >
@@ -31,7 +31,7 @@ export default function SharePage() {
           fontSize: 30,
         }}
       >
-        Share Reminder
+        Share Reminders
       </Text>
       <FlatList
         data={reminders}
